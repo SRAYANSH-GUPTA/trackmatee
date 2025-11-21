@@ -1,0 +1,19 @@
+name: trackmatee
+description: A Flutter project
+
+environment:
+  sdk: ">=2.18.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.1.1
+
+flutter:
+  uses-material-design: true
+
+  # Optional: if you want to use the screenshot image inside the app,
+  # copy the file into project/assets/ and uncomment:
+  #
+  # assets:
+  #   - assets/screenshots/Screenshot 2025-11-21 144943.png
