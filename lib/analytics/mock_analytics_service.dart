@@ -6,8 +6,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 class MockAnalyticsService {
   static final Random _random = Random();
   static final List<String> _districts = [
-    'Ernakulam', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kannur',
-    'Kollam', 'Alappuzha', 'Palakkad', 'Malappuram', 'Kottayam'
+    'Delhi', 'Gurgaon', 'Noida', 'Greater Noida', 'Neemrana',
+    'Meerut', 'Bulandsheher', 'Modinagar', 'Dwarka', 'Saket'
   ];
   static final List<String> _transportModes = ['Bus', 'Car', 'Train', 'Metro', 'Auto', 'Bike'];
   static final List<LatLng> _keralaBounds = [
