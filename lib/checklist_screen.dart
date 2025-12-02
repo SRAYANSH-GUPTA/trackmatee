@@ -12,21 +12,18 @@ class _ChecklistScreenState extends State<ChecklistScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  /// Updated categories based on your request
-  final Map<String, List<String>> _tabItems = {
+  /// Default categories
+  final Map<String, List<String>> _defaultItems = {
     'Essentials': ['Hair Dryer', 'Serum', 'Power Bank', 'Sunglasses', 'Charger'],
-    'Travel Items': [
-      'Passport',
-      'Extra Clothes',
-      'Travel Pillow',
-      'Toiletries'
-    ],
+    'Travel Items': ['Passport', 'Extra Clothes', 'Travel Pillow', 'Toiletries'],
     'Weather': ['Jacket', 'Umbrella', 'Sunscreen'],
     'Health': ['Painkiller', 'Antacid', 'Band Aid'],
     'Kids & Family': ['Kid Snacks', 'Baby Diapers']
   };
 
-  late List<String> _flatItems;
+  /// All items (default + user added)
+  Map<String, List<String>> _tabItems = {};
+
   Set<String> _checked = {};
   bool _loaded = false;
 
@@ -34,25 +31,31 @@ class _ChecklistScreenState extends State<ChecklistScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    _flatItems = _createFlatList();
-    _loadChecked();
+    _loadData();
   }
 
-  List<String> _createFlatList() {
-    final List<String> out = [];
-    _tabItems.forEach((tab, items) {
-      for (var it in items) {
-        out.add('$tab|$it');
-      }
-    });
-    return out;
-  }
-
-  Future<void> _loadChecked() async {
+  Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Load checked items
     final saved = prefs.getStringList('checked') ?? [];
+
+    // Load custom items for each tab
+    final Map<String, List<String>> customItems = {};
+    for (var tabKey in _defaultItems.keys) {
+      final custom = prefs.getStringList('custom_$tabKey') ?? [];
+      customItems[tabKey] = custom;
+    }
+
+    // Merge default + custom items
+    final merged = <String, List<String>>{};
+    _defaultItems.forEach((tab, defaultList) {
+      merged[tab] = [...defaultList, ...customItems[tab]!];
+    });
+
     setState(() {
       _checked = saved.toSet();
+      _tabItems = merged;
       _loaded = true;
     });
   }
@@ -60,6 +63,14 @@ class _ChecklistScreenState extends State<ChecklistScreen>
   Future<void> _saveChecked() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('checked', _checked.toList());
+  }
+
+  Future<void> _saveCustomItems(String tabKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final defaultCount = _defaultItems[tabKey]!.length;
+    final allItems = _tabItems[tabKey]!;
+    final customItems = allItems.sublist(defaultCount);
+    await prefs.setStringList('custom_$tabKey', customItems);
   }
 
   void _toggleCheck(String key) {
@@ -74,40 +85,87 @@ class _ChecklistScreenState extends State<ChecklistScreen>
   }
 
   double _progressPercent() {
-    final total = _flatItems.length;
+    final total = _tabItems.values.fold<int>(0, (sum, list) => sum + list.length);
     if (total == 0) return 0.0;
     return _checked.length / total;
   }
 
-  void _aiSuggestForActiveTab() {
+  void _showAddItemDialog() {
     final activeIndex = _tabController.index;
     final tabName = _tabItems.keys.elementAt(activeIndex);
-    final suggestions = <String>[];
+    final controller = TextEditingController();
 
-    if (tabName == 'Essentials') {
-      if (!_checked.contains('Essentials|Power Bank')) suggestions.add('Power Bank');
-      if (!_checked.contains('Essentials|Charger')) suggestions.add('Charger');
-    } else if (tabName == 'Travel Items') {
-      if (!_checked.contains('Travel Items|Passport')) suggestions.add('Passport');
-    } else if (tabName == 'Weather') {
-      if (!_checked.contains('Weather|Umbrella')) suggestions.add('Umbrella');
-    } else if (tabName == 'Health') {
-      if (!_checked.contains('Health|Painkiller')) suggestions.add('Painkiller');
-    } else if (tabName == 'Kids & Family') {
-      if (!_checked.contains('Kids & Family|Kid Snacks')) suggestions.add('Kid Snacks');
-    }
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1C24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Add item to $tabName',
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Enter item name',
+            hintStyle: const TextStyle(color: Colors.white38),
+            filled: true,
+            fillColor: const Color(0xFF24222C),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final itemName = controller.text.trim();
+              if (itemName.isNotEmpty) {
+                _addCustomItem(tabName, itemName);
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBFA3FF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  void _addCustomItem(String tabName, String itemName) {
     setState(() {
-      for (var s in suggestions) {
-        _checked.add('$tabName|$s');
-      }
+      _tabItems[tabName]!.add(itemName);
     });
-    _saveChecked();
+    _saveCustomItems(tabName);
+    _showSnack('Added "$itemName" to $tabName');
+  }
 
-    if (suggestions.isEmpty) {
-      _showSnack('No new suggestions for "$tabName"');
+  void _deleteItem(String tabKey, String item) {
+    // Check if it's a custom item (not in default list)
+    if (!_defaultItems[tabKey]!.contains(item)) {
+      setState(() {
+        _tabItems[tabKey]!.remove(item);
+        _checked.remove('$tabKey|$item');
+      });
+      _saveCustomItems(tabKey);
+      _saveChecked();
+      _showSnack('Deleted "$item"');
     } else {
-      _showSnack('Added suggestions: ${suggestions.join(', ')}');
+      _showSnack('Cannot delete default items');
     }
   }
 
@@ -156,31 +214,32 @@ class _ChecklistScreenState extends State<ChecklistScreen>
             children: [
               const SizedBox(height: 10),
 
-              /// 🔥 TOP PROGRESS PERCENTAGE MOVED HERE
+              /// TOP SECTION - Progress percentage
               Text(
                 '$percentText% packed',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                    color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
 
-              /// Text
               Text('Select more items to complete packing',
                   style: textStyleSmall),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
+              /// Progress bar with proper alignment
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('0%', style: textStyleSmall),
                   const SizedBox(width: 12),
-                  Expanded(child: _smallProgressSegments(progress)),
+                  _smallProgressSegments(progress),
                   const SizedBox(width: 12),
                   Text('100%', style: textStyleSmall),
                 ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               Icon(Icons.backpack_outlined, color: primaryPurple, size: 46),
               const SizedBox(height: 10),
@@ -238,14 +297,16 @@ class _ChecklistScreenState extends State<ChecklistScreen>
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           ElevatedButton.icon(
-                            onPressed: _aiSuggestForActiveTab,
+                            onPressed: _showAddItemDialog,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryPurple,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
                             ),
-                            icon: const Icon(Icons.lightbulb_outline),
-                            label: const Text('AI Suggest'),
+                            icon: const Icon(Icons.add, size: 20),
+                            label: const Text('Add Item'),
                           ),
                         ],
                       ),
@@ -263,10 +324,12 @@ class _ChecklistScreenState extends State<ChecklistScreen>
                                 final item = items[index];
                                 final key = '$tabKey|$item';
                                 final checked = _checked.contains(key);
+                                final isCustom = !_defaultItems[tabKey]!.contains(item);
+
                                 return GestureDetector(
                                   onTap: () => _toggleCheck(key),
                                   child: Container(
-                                    margin: const EdgeInsets.symmetric(vertical: 8),
+                                    margin: const EdgeInsets.symmetric(vertical: 6),
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 14),
                                     decoration: BoxDecoration(
@@ -299,7 +362,17 @@ class _ChecklistScreenState extends State<ChecklistScreen>
                                         ),
                                         if (checked)
                                           const Icon(Icons.check_circle,
-                                              color: Colors.white)
+                                              color: Colors.white, size: 22),
+                                        if (isCustom) ...[
+                                          const SizedBox(width: 8),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline,
+                                                color: Colors.white54, size: 20),
+                                            onPressed: () => _deleteItem(tabKey, item),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   ),
