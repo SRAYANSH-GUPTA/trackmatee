@@ -1,76 +1,48 @@
 // =============================================================
-//                      TRACKMATE - MAIN APP
+//                      TRACKMATE - MAIN APP (CLEAN BUILD)
 // =============================================================
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+// =============== SERVICES ===============
+import 'package:trackmate_app/services/auth_service.dart';
+import 'package:trackmate_app/services/localization_service.dart';
+import 'package:trackmate_app/services/stats_api_service.dart';
+
 // =============== CONTROLLERS ===============
 import 'package:trackmate_app/controllers/profile_controller.dart';
 import 'package:trackmate_app/controllers/language_controller.dart';
 import 'package:trackmate_app/controllers/location_controller.dart';
 import 'package:trackmate_app/controllers/saved_places_controller.dart';
-
-// =============== SERVICES ===============
-import 'package:trackmate_app/services/auth_service.dart';
-import 'package:trackmate_app/services/localization_service.dart';
+import 'package:trackmate_app/controllers/stats_controller.dart';
 
 // =============== ONBOARDING ===============
 import 'package:trackmate_app/screens/onboarding/splash_screen.dart';
 import 'package:trackmate_app/screens/onboarding/welcome_screen.dart';
 import 'package:trackmate_app/screens/onboarding/permissions_screen.dart';
-import 'package:trackmate_app/screens/onboarding/terms_of_use_screen.dart';
 import 'package:trackmate_app/screens/onboarding/main_navigation_screen.dart';
+import 'package:trackmate_app/screens/onboarding/terms_of_use_screen.dart';
 
 // =============== AUTH ===============
 import 'package:trackmate_app/screens/auth/login_screen.dart';
 import 'package:trackmate_app/screens/auth/signup_screen.dart';
-import 'package:trackmate_app/screens/auth/forgot_password_screen.dart';
-import 'package:trackmate_app/screens/auth/forgot_otp_screen.dart';
 import 'package:trackmate_app/screens/auth/reset_password_screen.dart';
 import 'package:trackmate_app/screens/auth/otp_verification.dart';
 import 'package:trackmate_app/screens/auth/otp_verification_reset.dart';
+import 'package:trackmate_app/screens/auth/forgot_password_screen.dart';
+import 'package:trackmate_app/screens/auth/forgot_otp_screen.dart';
 
 // =============== MAIN SCREENS ===============
-import 'package:trackmate_app/screens/analytics/analytics_screen.dart';
-import 'package:trackmate_app/screens/bookings/booking_screen.dart';
 import 'package:trackmate_app/screens/discover/discover_screen.dart';
-import 'package:trackmate_app/screens/maps_screen.dart';
+import 'package:trackmate_app/screens/onboarding/home_screen.dart';
 
-// =============== TRIPS & PLANNER ===============
-import 'package:trackmate_app/screens/trips/planner_screen.dart';
-import 'package:trackmate_app/screens/trips/trips_history_screen.dart';
-import 'package:trackmate_app/screens/trips/plan_a_trip_screen.dart';
+// =============== AI CHECKLIST ===============
+import 'package:trackmate_app/screens/ai_checklist_screen.dart';
 
-// =============== USER ===============
-import 'package:trackmate_app/screens/user/profile_screen.dart' as UserProfile;
-import 'package:trackmate_app/screens/user/settings_screen.dart';
-import 'package:trackmate_app/screens/user/support_screen.dart';
-import 'package:trackmate_app/screens/user/trusted_contacts_screen.dart';
-import 'package:trackmate_app/screens/user/vehicle_info_screen.dart';
-import 'package:trackmate_app/screens/user/edit_profile_screen.dart';
-
-// =============== VERIFICATION ===============
-import 'package:trackmate_app/screens/verification/user_verification_screen.dart';
-import 'package:trackmate_app/screens/aadhaar_verification_screen.dart';
-import 'package:trackmate_app/screens/capture_id_screen.dart';
-import 'package:trackmate_app/screens/id_capture_tips_screen.dart';
-import 'package:trackmate_app/screens/verification/id_status_screen.dart';
-
-// =============== TOOLS ===============
-import 'package:trackmate_app/screens/tools/safety_tools_screen.dart';
-import 'package:trackmate_app/screens/tools/invite_friends_screen.dart';
-
-// =============== PLACES ===============
-import 'package:trackmate_app/screens/location_search_screen.dart';
-import 'package:trackmate_app/screens/places/add_work_screen.dart';
-
-// =============== OTHER SCREENS ===============
-import 'package:trackmate_app/screens/edit_address_screen.dart';
-import 'package:trackmate_app/screens/auto_trip_tracking_screen.dart';
-import 'package:trackmate_app/screens/cost_calculator_screen.dart';
-
+// =============== USER CONTRIBUTION / STATS ===============
+import 'package:trackmate_app/screens/my_stats.dart';
 
 // =============================================================
 //                           ENTRY POINT
@@ -78,22 +50,26 @@ import 'package:trackmate_app/screens/cost_calculator_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await GetStorage.init();
 
-  try { await dotenv.load(); }
-  catch (e) { debugPrint("⚠️ .env not loaded => $e"); }
+  try {
+    await dotenv.load();
+  } catch (e) {
+    debugPrint("⚠️ .env not loaded => $e");
+  }
 
-  // GLOBAL SERVICES
+  // ====== SERVICES / CONTROLLERS ======
   Get.put(AuthService(), permanent: true);
   Get.put(ProfileController(), permanent: true);
   Get.put(LanguageController(), permanent: true);
   Get.put(LocationController(), permanent: true);
   Get.lazyPut(() => SavedPlacesController());
 
+  // ====== STATS SERVICE (NEW) ======
+  Get.lazyPut(() => StatsController());
+
   runApp(const TrackMateApp());
 }
-
 
 // =============================================================
 //                        ROOT APP
@@ -110,7 +86,7 @@ class TrackMateApp extends StatelessWidget {
 
       translations: LocalizationService(),
       locale: LocalizationService.fallbackLocale,
-      fallbackLocale: const Locale('en','US'),
+      fallbackLocale: const Locale('en', 'US'),
 
       initialRoute: "/",
 
@@ -119,70 +95,39 @@ class TrackMateApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF1A1A2E),
       ),
 
-
-      // =============================================================
-      //                       ROUTE MAP (NO DUPLICATES)
-      // =============================================================
       getPages: [
 
-        /// ONBOARDING
-        GetPage(name:"/", page:()=> const SplashScreen()),
-        GetPage(name:"/welcome", page:()=> const WelcomeScreen()),
-        GetPage(name:"/permissions", page:()=> const LocationPermissionScreen()),
-        GetPage(name:"/terms", page:()=> const TermsOfUseScreen()),
-        GetPage(name:"/home", page:()=> const MainNavigationScreen()),
+        /// ======== ONBOARDING ========
+        GetPage(name: "/", page: () => const SplashScreen()),
+        GetPage(name: "/welcome", page: () => const WelcomeScreen()),
+        GetPage(name: "/permissions", page: () => const LocationPermissionScreen()),
+        GetPage(name: "/terms", page: () => const TermsOfUseScreen()),
+        GetPage(name: "/home", page: () => const MainNavigationScreen()),
 
-        /// AUTH
-        GetPage(name:"/login", page:()=> const LoginScreen()),
-        GetPage(name:"/signup", page:()=> const SignUpScreen()),
-        GetPage(name:"/reset-password", page:()=> const ResetPasswordScreen()),
-        GetPage(name:"/otp", page:()=> const OtpVerificationScreen()),
-        GetPage(name:"/otp-reset", page:()=> const OtpVerificationResetScreen()),
-        GetPage(name:"/forgot-password", page:()=> const ForgotPasswordScreen()),
-        GetPage(name:"/forgot-otp", page:()=> const ForgotOtpVerifyScreen()),
+        /// ======== AUTH ========
+        GetPage(name: "/login", page: () => const LoginScreen()),
+        GetPage(name: "/signup", page: () => const SignUpScreen()),
+        GetPage(name: "/reset-password", page: () => const ResetPasswordScreen()),
+        GetPage(name: "/otp", page: () => const OtpVerificationScreen()),
+        GetPage(name: "/otp-reset", page: () => const OtpVerificationResetScreen()),
+        GetPage(name: "/forgot-password", page: () => const ForgotPasswordScreen()),
+        GetPage(name: "/forgot-otp", page: () => const ForgotOtpVerifyScreen()),
 
-        GetPage(name:"/analytics", page:()=> const AnalyticsScreen()),
-        GetPage(name:"/discover", page:()=> const DiscoverScreen()),
-        GetPage(name:"/bookings", page:()=> const BookingScreen()),
-        GetPage(name:"/maps", page:()=> const MapsScreen()),
+        /// ======== MAIN SCREENS ========
+        GetPage(name: "/discover", page: () => const DiscoverScreen()),
+        GetPage(name: "/dashboard", page: () => const HomeScreen()),
 
-        /// TRIPS + PLANNER (FIXED)
-        GetPage(name:"/trip-history", page:()=> TripHistoryScreen()),
-        GetPage(name:"/planner", page:()=> const PlannerScreen()),
-        GetPage(name:"/plan-a-trip", page:()=> const PlanATripScreen()),   // ⭐ Working route
+        /// ======== AI CHECKLIST ========
+        GetPage(name: "/ai-checklist", page: () => AiChecklistScreen()),
 
-        /// USER
-        GetPage(name:"/profile", page:()=> const UserProfile.ProfileScreen()),
-        GetPage(name:"/edit-profile", page:()=> const EditProfileScreen()),
-        GetPage(name:"/settings", page:()=> const SettingsScreen()),
-        GetPage(name:"/support", page:()=> const SupportScreen()),
-        GetPage(name:"/trusted-contacts", page:()=> const TrustedContactsScreen()),
-        GetPage(name:"/vehicle-info", page:()=> const VehicleInfoScreen()),
-
-        /// VERIFICATION
-        GetPage(name:"/user-verification", page:()=> const UserVerificationScreen()),
-        GetPage(name:"/aadhaar", page:()=> const AadhaarVerificationScreen()),
-        GetPage(name:"/capture-id", page:()=> const CaptureIdScreen(isFront:true)),
-        GetPage(name:"/id-tips", page:()=> const IdCaptureTipsScreen()),
-        GetPage(name:"/id-status", page:()=> const IdStatusScreen()),
-
-        /// TOOLS
-        GetPage(name:"/safety-tools", page:()=> const SafetyToolsScreen()),
-        GetPage(name:"/invite", page:()=> const InviteFriendsScreen()),
-
-        /// PLACES
-        GetPage(name:"/location-search", page:()=> const LocationSearchScreen()),
-        GetPage(name:"/add-work", page:()=> const AddWorkScreen()),
-
-        /// OTHERS
-        GetPage(name:"/edit-address", page:()=> const EditAddressScreen()),
-        GetPage(name:"/auto-trip-tracking", page:()=> const AutoTripTrackingScreen()),
-        GetPage(name:"/cost-calculator", page:()=> const CostCalculatorScreen()),
+        /// ======== STATS / CONTRIBUTION ========
+        GetPage(name: "/my-stats", page: () => const MyStatsScreen()),
+    // Add this temporarily in your main.dart or any screen
+    void printToken() {
+    final token = GetStorage().read('auth_token'); // or your key
+    print('🔑 STORED TOKEN: $token');
+    }
       ],
     );
   }
-}
-
-class TripsHistoryScreen {
-  const TripsHistoryScreen();
 }

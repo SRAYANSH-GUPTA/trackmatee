@@ -42,12 +42,12 @@ class _OnboardingWidgetState extends State<OnboardingWidget> {
 
   List<OnboardingData> onboardingData = [
     OnboardingData(
-      image: 'assets/images/onboard1.png',
+      image: 'assets/app_icon.png',
       title: 'Welcome to Trackmate',
       subtitle: 'Your personal safety and travel companion.',
     ),
     OnboardingData(
-      image: 'assets/images/onboard2.png',
+      image: 'assets/Rectangle.png',
       title: 'Real-time Tracking',
       subtitle: 'Share your location with trusted contacts.',
     ),

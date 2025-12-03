@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 class AuthService extends GetxService {
+  // reactive values
   final _isLoggedIn = false.obs;
   final _token = ''.obs;
   final _email = ''.obs;
@@ -10,12 +11,18 @@ class AuthService extends GetxService {
 
   final _box = GetStorage();
 
-  // ValueNotifier for ValueListenableBuilder
+  // For UI listening (ValueListenableBuilder, etc.)
   static final ValueNotifier<bool> loginState = ValueNotifier<bool>(false);
 
+  // --------------------
   // GETTERS
+  // --------------------
+
   bool get isLoggedIn => _isLoggedIn.value;
-  String get token => _token.value;
+
+  /// REQUIRED: Token getter used in API calls
+  String? get token => _token.value.isNotEmpty ? _token.value : null;
+
   String get email => _email.value;
   String get username => _username.value;
 
@@ -23,50 +30,70 @@ class AuthService extends GetxService {
   void onInit() {
     super.onInit();
 
+    // load stored data
     _isLoggedIn.value = _box.read('isLoggedIn') ?? false;
     _token.value = _box.read('token') ?? '';
     _email.value = _box.read('email') ?? '';
     _username.value = _box.read('username') ?? 'User';
 
-    // Update the static loginState
+    // update ValueNotifier
     loginState.value = _isLoggedIn.value;
 
-    // Listen to changes in _isLoggedIn and sync with loginState
-    ever(_isLoggedIn, (value) {
-      loginState.value = value;
+    // keep ValueNotifier synced
+    ever(_isLoggedIn, (val) {
+      loginState.value = val as bool;
     });
   }
 
-  // CALL THIS AFTER LOGIN API SUCCESS
-  Future<void> login(String email, String password) async {
-    await Future.delayed(const Duration(seconds: 1));
+  // --------------------
+  // LOGIN
+  // --------------------
 
+  /// Call this after successful API response
+  Future<void> login({
+    required String token,
+    required String email,
+    required String username,
+  }) async {
     _isLoggedIn.value = true;
-    _token.value = 'dummy_token_${DateTime.now().millisecondsSinceEpoch}';
+    _token.value = token;
     _email.value = email;
-    _username.value = email.split('@')[0]; // TEMP – until API sends real name
+    _username.value = username;
 
     await _box.write('isLoggedIn', true);
     await _box.write('token', _token.value);
     await _box.write('email', _email.value);
     await _box.write('username', _username.value);
 
-    // loginState.value will be updated automatically via the ever() listener
+    // navigation example (optional)
+    if (Get.currentRoute != '/home') {
+      Get.offAllNamed('/home');
+    }
   }
 
-  Future<void> logout() async {
-    await Future.delayed(const Duration(milliseconds: 300));
+  // --------------------
+  // LOGOUT
+  // --------------------
 
+  Future<void> logout() async {
     _isLoggedIn.value = false;
     _token.value = '';
     _email.value = '';
     _username.value = '';
 
-    await _box.erase(); // complete wipe – safest
+    /// DELETE ONLY AUTH KEYS (do NOT wipe all local storage)
+    await _box.remove('isLoggedIn');
+    await _box.remove('token');
+    await _box.remove('email');
+    await _box.remove('username');
 
     Get.offAllNamed('/login');
   }
 }
+
+// --------------------
+// INITIALIZER
+// --------------------
 
 Future<AuthService> initAuthService() async {
   Get.put(AuthService());

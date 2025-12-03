@@ -287,81 +287,99 @@ class HomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // CARBON EMISSION -----------------------------------------------
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(color: Colors.white,
-                      borderRadius: BorderRadius.circular(20)),
-                  child: Column(children: [
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('25%', style: TextStyle(
-                                  color: Color(0xFF7C3AED),
-                                  fontSize: 38,
-                                  fontWeight: FontWeight.bold)),
-                              Text('more than previous month',
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 17))
-                            ],
-                          ),
-                          Column(crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                const Text('250 g/km',
-                                    style: TextStyle(fontSize: 25,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87)),
-                                Text('Monthly Carbon', style: TextStyle(
-                                    color: Colors.grey[600], fontSize: 13)),
-                                Text('emission', style: TextStyle(
-                                    color: Colors.grey[600], fontSize: 13)),
-                              ]),
-                        ]),
-
-                    const SizedBox(height: 20),
-
-                    // Purple Bars (One darker) -----------------------------------
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: List.generate(12, (i) {
-                        final heights = [
-                          30.0,
-                          40.0,
-                          45.0,
-                          50.0,
-                          55.0,
-                          60.0,
-                          65.0,
-                          68.0,
-                          70.0,
-                          74.0,
-                          78.0,
-                          80.0
-                        ];
-                        return Container(
-                          width: 18,
-                          height: heights[i],
-                          decoration: BoxDecoration(
-                            color: i == 7
-                                ? const Color(0xFF7C3AED)
-                                : const Color(0xFFE9D5FF),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        );
-                      }),
+                // ⭐ ANALYTICS / STATS CARD (CLICKABLE) -------------------------
+                GestureDetector(
+                  onTap: () => Get.toNamed('/my-stats'),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20)
                     ),
-                  ]), // 🔥 FIXED: Added missing closing bracket here
+                    child: Column(children: [
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('25%', style: TextStyle(
+                                    color: Color(0xFF7C3AED),
+                                    fontSize: 38,
+                                    fontWeight: FontWeight.bold)),
+                                Text('more than previous month',
+                                    style: TextStyle(
+                                        color: Colors.grey[600], fontSize: 17))
+                              ],
+                            ),
+                            Column(crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text('250 g/km',
+                                      style: TextStyle(fontSize: 25,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87)),
+                                  Text('Monthly Carbon', style: TextStyle(
+                                      color: Colors.grey[600], fontSize: 13)),
+                                  Text('emission', style: TextStyle(
+                                      color: Colors.grey[600], fontSize: 13)),
+                                ]),
+                          ]
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      // Purple Bars
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(12, (i) {
+                          final heights = [
+                            30.0, 40.0, 45.0, 50.0, 55.0, 60.0,
+                            65.0, 68.0, 70.0, 74.0, 78.0, 80.0
+                          ];
+                          return Container(
+                            width: 18,
+                            height: heights[i],
+                            decoration: BoxDecoration(
+                              color: i == 7
+                                  ? const Color(0xFF7C3AED)
+                                  : const Color(0xFFE9D5FF),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // "View Details" indicator
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Tap to view detailed stats',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.arrow_forward_ios,
+                              size: 12,
+                              color: Colors.grey[500]
+                          ),
+                        ],
+                      ),
+                    ]),
+                  ),
                 ),
 
                 const SizedBox(height: 20),
 
                 // HANDPICKED -----------------------------------------------------
-                // HANDPICKED -----------------------------------------------------
                 GestureDetector(
-                  onTap: () => Get.toNamed('/discover'),   // << ADDED TAP NAVIGATION
+                  onTap: () => Get.toNamed('/ai-checklist'),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     decoration: BoxDecoration(
@@ -374,37 +392,27 @@ class HomeScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(Icons.favorite_border, size: 28),
                         ),
                         const SizedBox(width: 16),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Handpicked',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
+                        const Expanded(
+                          child: Text(
+                            'YOUR PERSONALISED CHECKLIST',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
-                            Text(
-                              'collection for you',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        )
                       ],
                     ),
                   ),
                 ),
 
+                const SizedBox(height: 20),
 
                 // BUTTON ROW -----------------------------------------------------
                 Row(children: [
@@ -425,14 +433,14 @@ class HomeScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text('AUTO', style: TextStyle(color: Colors.white,
-                                  fontSize: 16,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold)),
                               Text('TRIP', style: TextStyle(color: Colors.white,
-                                  fontSize: 16,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold)),
                               Text('TRACKING', style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 16,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold)),
                             ],
                           ),
